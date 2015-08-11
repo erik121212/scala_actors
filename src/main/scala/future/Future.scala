@@ -22,7 +22,7 @@ object Future {
     //http://alvinalexander.com/scala/akka-actor-how-to-send-message-wait-for-reply-ask
     // create the system and actor
 
-    implicit val timeout = Timeout(19 seconds)
+    implicit val timeout = Timeout(3 seconds)
 
     val system = ActorSystem("AskTestSystem")
     val appsActor = system.actorOf(Props[AppointmentActor], name = "appsActor")
@@ -31,16 +31,17 @@ object Future {
     val roomsActor = system.actorOf(Props( new RoomsActor(appsActor)), name = "roomsActor")
 
     val coordinatorActor = system.actorOf(Props(new CoordinatorActor(advisorActor, roomsActor)), name = "Coordinator")
-    println("Main started")
+    println("0. Main started")
 
-    println("Sending msg to get resources")
+    println("0. Sending msg to get Time Slots")
 
     val future1 = coordinatorActor ? MsgGetTimeSlots
-    val result1 : List[Advisor] = Await.result(future1, timeout.duration).asInstanceOf[List[Advisor]]
+    val result1 : List[Appointment] = Await.result(future1, timeout.duration).asInstanceOf[List[Appointment]]
 
-    println("Resources received: ")
-    result1.foreach(adv  => println(s" ${adv.corpKey}"))
+    println("0. Resources received: ")
+    result1.foreach(app  => println(s" ${app.startTime} ${app.room} ${app.advisor}"))
 
+    println("0. Shutdown")
     system.shutdown()
   }
 }

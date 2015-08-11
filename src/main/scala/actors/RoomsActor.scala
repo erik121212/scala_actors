@@ -1,7 +1,8 @@
 package actors
 
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Terminated, Props, ActorRef, Actor}
+import akka.routing.{RoundRobinRoutingLogic, Router, ActorRefRoutee}
 import domain.{Appointment, Room}
 
 
@@ -11,37 +12,51 @@ case object GetRoomsAppointments
 
 class RoomsActor(appointmentActorPool : ActorRef) extends Actor {
 
-  val rooms = List(new Room("a1@b.c"), new Room("a2@b.c"))
+  val rooms = List(new Room("a1@b.c", 20), new Room("a2@b.c", 25))
   var currentNumberOfRooms = 0
   var numberOfRooms = 0
 
+  var router = {
+//    println("2b. RoomsActor Create Router")
+    val routees = Vector.fill(5) {
+      val r = context.actorOf(Props[AppointmentActor])
+      context watch r
+      ActorRefRoutee(r)
+    }
+//    println("2b. RoomsActor Created Router")
+    Router(RoundRobinRoutingLogic(), routees)
+  }
+
   def  receive = {
+    case Terminated(a) =>
+      println("2b. RoomsActor.Terminated entry")
+      router = router.removeRoutee(a)
+      val r = context.actorOf(Props[AppointmentActor])
+      context watch r
+      router = router.addRoutee(r)
+      println("2b. RoomsActor.Terminated exit")
+
     case GetRoomsAppointments =>
-      println(" RoomsActor.receive entry")
+      println("2b. RoomsActor.GetRoomsAppointments entry")
       Thread.sleep(1000) // IO ophalen Advisors
 
       numberOfRooms = rooms.length
+      rooms.foreach(room => router.route(room, self))
 
-      rooms.foreach(room => appointmentActorPool ! room)
+      println("2b. RoomsActor.GetRoomsAppointments exit")
 
-      /*val a:List[Future] = advisors.foreach(adv => ask(appointmentActorPool, adv))
-      Thread.sleep(1000) // IO ophalen Afspraken
-      sender ! advisors*/
-      println(" AdvisorActor.receive exit")
+   /* case apps: List[Appointment] =>
+      println("2b. RoomsActor.List[Appointment] entry")
 
-    case apps: List[Appointment] =>
-      println(" RoomsActor.List[Appointment] entry")
-
-      apps foreach println
+//      apps foreach println
       currentNumberOfRooms += 1
-
       if (currentNumberOfRooms == numberOfRooms) {
-        println("RoomsActor.List[Appointment] Last req received")
+        println("2b. RoomsActor.List[Appointment] Last req received")
       }
 
-      println(" RoomsActor.List[Appointment] exit")
+      println("2b. RoomsActor.List[Appointment] exit")*/
 
-    case _ => println("Invalid message Room")
+    case e @ _ => println(s"2b. Invalid message '$e' at RoomActor")
   }
 }
 

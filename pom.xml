@@ -11,8 +11,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <scala.version>2.10.4</scala.version>
-        <scala.tools.version>2.10</scala.tools.version>
+        <scala.version>2.11.7</scala.version>
+        <scala.tools.version>2.11</scala.tools.version>
         <scalatest.output>WD</scalatest.output>
     </properties>
 
@@ -91,8 +91,8 @@
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.tools.version}</artifactId>
-            <version>2.1.2</version>
+            <artifactId>scalatest_2.11</artifactId>
+            <version>2.2.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -114,19 +114,20 @@
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.1.4</version>
+            <artifactId>akka-actor_2.11</artifactId>
+            <version>2.3.12</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.10</artifactId>
-            <version>2.1.4</version>
+            <artifactId>akka-remote_2.11</artifactId>
+            <version>2.3.12</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-kernel_2.10</artifactId>
-            <version>2.1.4</version>
+            <artifactId>akka-kernel_2.11</artifactId>
+            <version>2.3.12</version>
         </dependency>
+
     </dependencies>
     <repositories>
         <repository>

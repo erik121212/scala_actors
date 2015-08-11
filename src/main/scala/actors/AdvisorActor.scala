@@ -1,50 +1,60 @@
 package actors
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Terminated, Props, ActorRef, Actor}
+import akka.routing.{Router, RoundRobinRoutingLogic, ActorRefRoutee}
+
 import domain.Advisor
 import domain.Appointment
-import akka.pattern.ask
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.concurrent.Await
-
-import scala.concurrent.{ExecutionContext, Promise}
 
 case object GetAdvisorsAppointments
 
 class AdvisorActor(appointmentActorPool : ActorRef) extends Actor {
-  val advisors = List(new Advisor("AA11CC"), new Advisor("BB11CC"), new Advisor("CC11CC"), new Advisor("DD11CC"))
+  val advisors = List(new Advisor("AA11CC", 20), new Advisor("BB11CC", 15), new Advisor("CC11CC", 25), new Advisor("DD11CC", 10))
   var currentNumberOfAdvisors = 0
   var numberOfAdvisors = 0
 
-  def  receive = {
+  var router = {
+//    println("2a. AdvisorActor Create Router")
+    val routees = Vector.fill(5) {
+      val r = context.actorOf(Props[AppointmentActor])
+      context watch r
+      ActorRefRoutee(r)
+    }
+//    println("2a. AdvisorActor Created Router")
+    Router(RoundRobinRoutingLogic(), routees)
+  }
+
+  def receive = {
+    case Terminated(a) =>
+      println("2a. AdvisorActor.Terminated entry")
+      router = router.removeRoutee(a)
+      val r = context.actorOf(Props[AppointmentActor])
+      context watch r
+      router = router.addRoutee(r)
+      println("2a. AdvisorActor.Terminated exit")
+
     case GetAdvisorsAppointments =>
-      println(" AdvisorActor.receive entry")
+      println("2a. AdvisorActor.GetAdvisorsAppointments entry")
       Thread.sleep(1000) // IO ophalen Advisors
 
       numberOfAdvisors = advisors.length
+      advisors.foreach(adv => router.route(adv, self))
 
-      advisors.foreach(adv =>  appointmentActorPool ! adv)
-
-/*val a:List[Future] = advisors.foreach(adv => ask(appointmentActorPool, adv))
-Thread.sleep(1000) // IO ophalen Afspraken
-sender ! advisors*/
-      println(" AdvisorActor.receive exit")
+      println("2a. AdvisorActor.GetAdvisorsAppointments exit")
 
     case apps : List[Appointment] =>
-      println(" AdvisorActor.List[Appointment] entry")
+      println("2a. AdvisorActor.List[Appointment] entry")
 
-      apps foreach println
+//      apps foreach println
       currentNumberOfAdvisors  += 1
-
       if (currentNumberOfAdvisors == numberOfAdvisors) {
-        println("AdvisorActor.List[Appointment] Last req received")
+
+        println("2a. AdvisorActor.List[Appointment] Last req received")
       }
 
-      println(" AdvisorActor.List[Appointment] exit")
+      println("2a. AdvisorActor.List[Appointment] exit")
 
-    case _ => println("Invalid message Advisor")
+    case e @ _ => println(s"2a. Invalid message '$e' at AdvisorActor")
 
   }
 }

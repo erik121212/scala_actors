@@ -21,10 +21,11 @@ class CoordinatorActor(advisorActor: ActorRef, roomsActor: ActorRef)  extends Ac
   def  receive = {
 
     case MsgGetTimeSlots =>
-      implicit val timeout = Timeout(9 seconds)
+      implicit val timeout = Timeout(3 seconds)
 
-      println("CoordinatorActor.MsgGetResources entry")
+      println("1. CoordinatorActor.MsgGetTimeSlots entry")
 
+/*
       val fAdvisorsApps: Future[List[Appointment]] = ask(advisorActor ,GetAdvisorsAppointments).mapTo[List[Appointment]]
       val fRoomsApps: Future[List[Appointment]]  = ask(roomsActor , GetRoomsAppointments).mapTo[List[Appointment]]
 
@@ -32,29 +33,41 @@ class CoordinatorActor(advisorActor: ActorRef, roomsActor: ActorRef)  extends Ac
         a <- fAdvisorsApps
         b <- fRoomsApps
       //        c <- ask(MergeAdvAndRoom, a ,b )
-      } yield a
-      println("CoordinatorActor.MsgGetResources exit")
+      } yield a ::: b
+*/
+      advisorActor ! GetAdvisorsAppointments
+      roomsActor ! GetRoomsAppointments
 
-      f pipeTo sender
+      println("1. CoordinatorActor.MsgGetTimeSlots step 1")
+
+//      f pipeTo sender
+      println("1. CoordinatorActor.MsgGetTimeSlots exit")
+
+    case apps: List[Appointment] =>
+      println("1. CoordinatorActor.List[Appointment] entry")
+
+      apps foreach println
+
+      println("1. CoordinatorActor.List[Appointment] exit")
 
     case MsgGetRooms =>
-      println("CoordinatorActor.MsgGetRooms entry")
+      println("1. CoordinatorActor.MsgGetRooms entry")
       roomsReceived = true
 
       if (advisorsReceived && roomsReceived ) {
         //originator ! "done"
       }
-      println("CoordinatorActor.MsgGetRooms exit")
+      println("1. CoordinatorActor.MsgGetRooms exit")
 
     case MsgGetAdvisors =>
-      println("CoordinatorActor.MsgGetAdvisors entry")
+      println("1. CoordinatorActor.MsgGetAdvisors entry")
       advisorsReceived = true
 
       if (advisorsReceived && roomsReceived ) {
         //originator ! "done"
       }
-      println("CoordinatorActor.MsgGetAdvisors exit")
+      println("1. CoordinatorActor.MsgGetAdvisors exit")
 
-    case _ => println("Invalid message Coordinator")
+    case e @ _ => println(s"1. Invalid message '$e' CoordinatorActor")
   }
 }
