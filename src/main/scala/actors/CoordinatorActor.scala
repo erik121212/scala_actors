@@ -1,72 +1,67 @@
 package actors
 
-import akka.actor.{ActorRef, Actor}
-import akka.pattern.ask
-import akka.pattern.pipe
+import actors.CoordinatorActor.{RoomSlots, AdvisorSlots, MsgGetTimeSlots}
+import akka.actor.{ActorRef, Terminated, Props, Actor}
 import akka.util.Timeout
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import domain._
 
-case object MsgGetTimeSlots
-case object MsgGetAdvisors
-case object MsgGetRooms
+object CoordinatorActor{
+  case object MsgGetTimeSlots
+  case class AdvisorSlots(slots : List[Appointment])
+  case class RoomSlots(slots : List[Appointment])
+}
 
-class CoordinatorActor(advisorActor: ActorRef, roomsActor: ActorRef)  extends Actor {
+class CoordinatorActor(duration : Int)  extends Actor {
   import context.dispatcher
-   private var roomsReceived = false
-   private var advisorsReceived = false
-  //private val originator ActorRef
+
+  var advAppointments : List[Appointment] = Nil
+  var roomAppointments : List[Appointment] = Nil
+  var allAppointments : List[Appointment] = Nil
+  var originator: ActorRef = _
 
   def  receive = {
+    case Terminated(a) =>
+      println(s"1. CoordinatorActor.Terminated entry ($a)")
+
+      println(s"1. CoordinatorActor.Terminated exit ($a)")
 
     case MsgGetTimeSlots =>
       implicit val timeout = Timeout(3 seconds)
+      originator = sender()
 
-      println("1. CoordinatorActor.MsgGetTimeSlots entry")
+      println(s"1. CoordinatorActor.MsgGetTimeSlots entry ($self)")
 
-/*
-      val fAdvisorsApps: Future[List[Appointment]] = ask(advisorActor ,GetAdvisorsAppointments).mapTo[List[Appointment]]
-      val fRoomsApps: Future[List[Appointment]]  = ask(roomsActor , GetRoomsAppointments).mapTo[List[Appointment]]
+      val availAdvisorsActor = context.actorOf(Props(new AvailableAdvisorSlotsActor(duration)))
+      val availRoomsActor = context.actorOf(Props(new AvailableRoomSlotsActor(duration)))
 
-      val f = for {
-        a <- fAdvisorsApps
-        b <- fRoomsApps
-      //        c <- ask(MergeAdvAndRoom, a ,b )
-      } yield a ::: b
-*/
-      advisorActor ! GetAdvisorsAppointments
-      roomsActor ! GetRoomsAppointments
+      availAdvisorsActor ! AvailableAdvisorSlotsActor.CollectSlots("Amsterdam", "ik wil iets", 20)
+      availRoomsActor ! AvailableRoomSlotsActor.CollectSlots("Amsterdam", "ik wil iets", 20)
 
-      println("1. CoordinatorActor.MsgGetTimeSlots step 1")
+      println(s"1. CoordinatorActor.MsgGetTimeSlots exit")
 
-//      f pipeTo sender
-      println("1. CoordinatorActor.MsgGetTimeSlots exit")
+    case AdvisorSlots(advApps) =>
+      println(s"1. CoordinatorActor.AdvisorSlots entry")
 
-    case apps: List[Appointment] =>
-      println("1. CoordinatorActor.List[Appointment] entry")
+      advAppointments = advApps
 
-      apps foreach println
-
-      println("1. CoordinatorActor.List[Appointment] exit")
-
-    case MsgGetRooms =>
-      println("1. CoordinatorActor.MsgGetRooms entry")
-      roomsReceived = true
-
-      if (advisorsReceived && roomsReceived ) {
-        //originator ! "done"
+      if (advAppointments != Nil && roomAppointments != Nil) {
+        println(s"1. CoordinatorActor.AdvisorSlots all Appointments ${advAppointments ++ roomAppointments} received")
+        originator ! advAppointments ++ roomAppointments
       }
-      println("1. CoordinatorActor.MsgGetRooms exit")
 
-    case MsgGetAdvisors =>
-      println("1. CoordinatorActor.MsgGetAdvisors entry")
-      advisorsReceived = true
+      println(s"1. CoordinatorActor.AdvisorSlots exit")
 
-      if (advisorsReceived && roomsReceived ) {
-        //originator ! "done"
+    case RoomSlots(roomApps) =>
+      println(s"1. CoordinatorActor.RoomSlots entry - $roomApps")
+
+      roomAppointments = roomApps
+
+      if (advAppointments != Nil && roomAppointments != Nil) {
+        println(s"1. CoordinatorActor.RoomSlots all Appointments ${advAppointments ++ roomAppointments} received")
+        originator ! advAppointments ++ roomAppointments
       }
-      println("1. CoordinatorActor.MsgGetAdvisors exit")
+      println(s"1. CoordinatorActor.RoomSlots exit")
 
     case e @ _ => println(s"1. Invalid message '$e' CoordinatorActor")
   }

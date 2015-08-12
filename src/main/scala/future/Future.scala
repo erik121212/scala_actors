@@ -1,5 +1,6 @@
 package future
 
+import actors.CoordinatorActor.MsgGetTimeSlots
 import actors._
 
 
@@ -25,20 +26,19 @@ object Future {
     implicit val timeout = Timeout(3 seconds)
 
     val system = ActorSystem("AskTestSystem")
-    val appsActor = system.actorOf(Props[AppointmentActor], name = "appsActor")
 
-    val advisorActor = system.actorOf(Props(new AdvisorActor(appsActor)), name = "advisorActor")
-    val roomsActor = system.actorOf(Props( new RoomsActor(appsActor)), name = "roomsActor")
 
-    val coordinatorActor = system.actorOf(Props(new CoordinatorActor(advisorActor, roomsActor)), name = "Coordinator")
+    val coordinatorActor = system.actorOf(Props(new CoordinatorActor(60)), name = "Coordinator")
     println("0. Main started")
 
     println("0. Sending msg to get Time Slots")
 
+    val sTime = System.nanoTime()
     val future1 = coordinatorActor ? MsgGetTimeSlots
     val result1 : List[Appointment] = Await.result(future1, timeout.duration).asInstanceOf[List[Appointment]]
+    val eTime = System.nanoTime()
 
-    println("0. Resources received: ")
+    println(s"0. Resources received in ${eTime-sTime}ns: ")
     result1.foreach(app  => println(s" ${app.startTime} ${app.room} ${app.advisor}"))
 
     println("0. Shutdown")
