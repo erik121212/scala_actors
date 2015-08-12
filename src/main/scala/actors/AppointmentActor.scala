@@ -19,12 +19,14 @@ class AppointmentActor extends Actor {
       Thread.sleep(adv.delay)
       println("3. AppointmentActor.Advisor Exit" + adv)
       sender ! List(new Appointment("09:00", adv), new Appointment("09:10", adv), new Appointment("09:20", adv))
+      context.system.stop(self)
 
     case room : Room =>
       println("3. AppointmentActor.Room Entry " + room)
       Thread.sleep(10)
       println("3. AppointmentActor.Room Exit" + room)
       sender ! List(new Appointment("09:00", room), new Appointment("09:10", room), new Appointment("09:20", room))
+      context.system.stop(self)
 
     case  e @ _ => println("3. Invalid message '$e' at AppointmentActor")
   }

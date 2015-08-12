@@ -45,7 +45,7 @@ class RoomsActor(appointmentActorPool : ActorRef) extends Actor {
 
       println("2b. RoomsActor.GetRoomsAppointments exit")
 
-   /* case apps: List[Appointment] =>
+    case apps: List[Appointment] =>
       println("2b. RoomsActor.List[Appointment] entry")
 
 //      apps foreach println
@@ -54,7 +54,7 @@ class RoomsActor(appointmentActorPool : ActorRef) extends Actor {
         println("2b. RoomsActor.List[Appointment] Last req received")
       }
 
-      println("2b. RoomsActor.List[Appointment] exit")*/
+      println("2b. RoomsActor.List[Appointment] exit")
 
     case e @ _ => println(s"2b. Invalid message '$e' at RoomActor")
   }

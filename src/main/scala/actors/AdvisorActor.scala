@@ -15,7 +15,7 @@ class AdvisorActor(appointmentActorPool : ActorRef) extends Actor {
 
   var router = {
 //    println("2a. AdvisorActor Create Router")
-    val routees = Vector.fill(5) {
+    val routees = Vector.fill(3) {
       val r = context.actorOf(Props[AppointmentActor])
       context watch r
       ActorRefRoutee(r)
