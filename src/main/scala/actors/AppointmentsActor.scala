@@ -26,10 +26,11 @@ class AppointmentsActor extends Actor {
 
     if (appointments != Nil && duration != 0) {
 //      sender ! MsgAppointments( timeslots )
-      Thread.sleep(5) // calculate Free Timeslots
 
       val availability = resource match {
         case adv: Advisor =>
+          println(s"3. AppointmentsActor.CalculateTimeSlots ($adv)")
+          Thread.sleep(100) // calculate Free Timeslots
           new AvailabilityAdvisor(
             adv.asInstanceOf[Advisor],
             List(
@@ -53,6 +54,8 @@ class AppointmentsActor extends Actor {
             )
           )
         case rm : Room =>
+          println(s"3. AppointmentsActor.CalculateTimeSlots ($rm)")
+          Thread.sleep(50) // calculate Free Timeslots
           new AvailabilityRoom(
             rm.asInstanceOf[Room],
             List(
@@ -85,29 +88,31 @@ class AppointmentsActor extends Actor {
 
       sender ! MsgAvailability(availability.asInstanceOf[Availability])
       context.system.stop(self)
+    } else {
+      println(s"3. AppointmentsActor.CalculateTimeSlots Delayed")
     }
   }
 
   def  receive = {
     case MsgAdvisorAppointments(adv, week) =>
       resource = adv
-      println(s"3. AppointmentsActor.Advisor Entry ($adv)")
+      println(s"3. AppointmentsActor.MsgAdvisorAppointments Entry ($adv)")
       Thread.sleep(adv.delay)
-      println(s"3. AppointmentsActor.Advisor step 1 ($adv)")
+      println(s"3. AppointmentsActor.MsgAdvisorAppointments step 1 ($adv)")
       Thread.sleep(adv.delay)
-      println(s"3. AppointmentsActor.Advisor step 2 ($adv)")
+      println(s"3. AppointmentsActor.MsgAdvisorAppointments step 2 ($adv)")
       Thread.sleep(adv.delay)
       appointments = List(new Appointment("aSubject 1","09:00", "10:00", adv), new Appointment("aLunch", "12:00", "13:00" , adv), new Appointment("aSubject 2", "14:00", "14:30", adv))
       CalculateTimeSlots
-      println(s"3. AppointmentsActor.Advisor Exit ($adv)")
+      println(s"3. AppointmentsActor.MsgAdvisorAppointments Exit ($adv)")
 
     case MsgRoomAppointments(room, week) =>
       resource = room
-      println(s"3. AppointmentsActor.Room Entry ($room)")
-      Thread.sleep(10)
+      println(s"3. AppointmentsActor.MsgRoomAppointments Entry ($room)")
+      Thread.sleep(room.delay)
       appointments = List(new Appointment("aClosed 1", "07:00", "08:30", room), new Appointment("aClosed 2", "12:00", "13:30" , room))
       CalculateTimeSlots
-      println(s"3. AppointmentsActor.Room Exit ($room)")
+      println(s"3. AppointmentsActor.MsgRoomAppointments Exit ($room)")
 
     case MsgDurationDetermined(subject) =>
       println(s"3. AppointmentsActor.MsgDurationDetermined entry ($subject)")

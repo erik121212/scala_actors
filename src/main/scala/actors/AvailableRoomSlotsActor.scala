@@ -67,7 +67,7 @@ class AvailableRoomSlotsActor extends Actor {
       println("2b. AvailableRoomSlotsActor.MsgAppointments exit")
 
     case MsgCustomerSubject(subject) =>
-      println(s"2b. AvailableRoomSlotsActor.MsgCustomerSubject entry ($subject) : $appointmentActors")
+      println(s"2b. AvailableRoomSlotsActor.MsgCustomerSubject entry ($subject)")
       appointmentActors.foreach(actor => actor ! MsgDurationDetermined(subject) )
       println(s"2b. AvailableRoomSlotsActor.MsgCustomerSubject exit")
 

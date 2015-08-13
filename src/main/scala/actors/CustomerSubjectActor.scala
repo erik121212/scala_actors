@@ -23,7 +23,7 @@ class CustomerSubjectActor extends Actor {
     case MsgGetCustomerSubject(subject, notifyActors) =>
       println(s"2c. CustomerSubjectActor.MsgGetCustomerSubject entry ($subject)")
 
-      Thread.sleep(2500) // IO ophalen CustomerSubject
+      Thread.sleep(1150) // IO ophalen CustomerSubject
 
       notifyActors.foreach(actor => actor ! MsgCustomerSubject(new CustomerSubject(subject, 60)))
 
