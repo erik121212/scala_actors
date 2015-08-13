@@ -1,24 +1,35 @@
 package actors
 
-import actors.CoordinatorActor.{RoomSlots, AdvisorSlots, MsgGetTimeSlots}
+import actors.CoordinatorActor.{MsgCustomerSubject, MsgRoomTimeSlots, MsgAdvisorTimeSlots, MsgGetTimeSlots}
 import akka.actor.{ActorRef, Terminated, Props, Actor}
 import akka.util.Timeout
 import scala.concurrent.duration._
 import domain._
 
 object CoordinatorActor{
-  case object MsgGetTimeSlots
-  case class AdvisorSlots(slots : List[Appointment])
-  case class RoomSlots(slots : List[Appointment])
+  case class MsgGetTimeSlots(location : String, subject : String, week : Int)
+  case class MsgAdvisorTimeSlots(slots : List[Availability])
+  case class MsgRoomTimeSlots(slots : List[Availability])
+  case class MsgCustomerSubject(subject: CustomerSubject)
 }
 
 class CoordinatorActor(duration : Int)  extends Actor {
   import context.dispatcher
+  val availAdvisorsActor = context.actorOf(Props[AvailableAdvisorSlotsActor])
+  val availRoomsActor = context.actorOf(Props[AvailableRoomSlotsActor])
+  val customerSubjectActor = context.actorOf(Props[CustomerSubjectActor])
 
-  var advAppointments : List[Appointment] = Nil
-  var roomAppointments : List[Appointment] = Nil
-  var allAppointments : List[Appointment] = Nil
+  var advAppointments : List[Availability] = Nil
+  var roomAppointments : List[Availability] = Nil
   var originator: ActorRef = _
+
+  private def DeliverTimeSlots = {
+    if (advAppointments != Nil && roomAppointments != Nil) {
+      println(s"1. CoordinatorActor.DeliverTimeSlots all Appointments ${advAppointments ++ roomAppointments} received")
+      originator ! advAppointments ++ roomAppointments
+      context.system.stop(self)
+    }
+  }
 
   def  receive = {
     case Terminated(a) =>
@@ -26,42 +37,41 @@ class CoordinatorActor(duration : Int)  extends Actor {
 
       println(s"1. CoordinatorActor.Terminated exit ($a)")
 
-    case MsgGetTimeSlots =>
+    case MsgGetTimeSlots(location, subject , week) =>
       implicit val timeout = Timeout(3 seconds)
       originator = sender()
 
-      println(s"1. CoordinatorActor.MsgGetTimeSlots entry ($self)")
+      println(s"1. CoordinatorActor.MsgGetTimeSlots entry ($location, $subject, $week)")
 
-      val availAdvisorsActor = context.actorOf(Props(new AvailableAdvisorSlotsActor(duration)))
-      val availRoomsActor = context.actorOf(Props(new AvailableRoomSlotsActor(duration)))
-
-      availAdvisorsActor ! AvailableAdvisorSlotsActor.CollectSlots("Amsterdam", "ik wil iets", 20)
-      availRoomsActor ! AvailableRoomSlotsActor.CollectSlots("Amsterdam", "ik wil iets", 20)
+      availAdvisorsActor ! AvailableAdvisorSlotsActor.MsgCollectSlots(location, subject , week)
+      availRoomsActor ! AvailableRoomSlotsActor.MsgCollectSlots(location, subject , week)
+      customerSubjectActor ! CustomerSubjectActor.MsgGetCustomerSubject(subject, List(availAdvisorsActor, availRoomsActor))
 
       println(s"1. CoordinatorActor.MsgGetTimeSlots exit")
 
-    case AdvisorSlots(advApps) =>
-      println(s"1. CoordinatorActor.AdvisorSlots entry")
+    case MsgAdvisorTimeSlots(advApps) =>
+      println(s"1. CoordinatorActor.MsgAdvisorTimeSlots entry")
 
       advAppointments = advApps
 
-      if (advAppointments != Nil && roomAppointments != Nil) {
-        println(s"1. CoordinatorActor.AdvisorSlots all Appointments ${advAppointments ++ roomAppointments} received")
-        originator ! advAppointments ++ roomAppointments
-      }
+      DeliverTimeSlots
 
-      println(s"1. CoordinatorActor.AdvisorSlots exit")
+      println(s"1. CoordinatorActor.MsgAdvisorTimeSlots exit")
 
-    case RoomSlots(roomApps) =>
-      println(s"1. CoordinatorActor.RoomSlots entry - $roomApps")
+    case MsgRoomTimeSlots(roomApps) =>
+      println(s"1. CoordinatorActor.MsgRoomTimeSlots entry - $roomApps")
 
       roomAppointments = roomApps
 
-      if (advAppointments != Nil && roomAppointments != Nil) {
-        println(s"1. CoordinatorActor.RoomSlots all Appointments ${advAppointments ++ roomAppointments} received")
-        originator ! advAppointments ++ roomAppointments
-      }
-      println(s"1. CoordinatorActor.RoomSlots exit")
+      DeliverTimeSlots
+
+      println(s"1. CoordinatorActor.MsgRoomTimeSlots exit")
+
+//    case MsgCustomerSubject(subject) =>
+//      println(s"1. CoordinatorActor.MsgRoomTimeSlots entry ($subject)")
+//      availAdvisorsActor ! MsgCustomerSubject(subject)
+//      availRoomsActor ! MsgCustomerSubject(subject)
+//      println(s"1. CoordinatorActor.MsgRoomTimeSlots exit")
 
     case e @ _ => println(s"1. Invalid message '$e' CoordinatorActor")
   }

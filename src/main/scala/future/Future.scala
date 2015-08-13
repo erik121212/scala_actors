@@ -34,12 +34,12 @@ object Future {
     println("0. Sending msg to get Time Slots")
 
     val sTime = System.nanoTime()
-    val future1 = coordinatorActor ? MsgGetTimeSlots
-    val result1 : List[Appointment] = Await.result(future1, timeout.duration).asInstanceOf[List[Appointment]]
+    val future1 = coordinatorActor ? MsgGetTimeSlots("aLocatie", "aSubject", 20)
+    val result1 : List[Availability] = Await.result(future1, timeout.duration).asInstanceOf[List[Availability]]
     val eTime = System.nanoTime()
 
     println(s"0. Resources received in ${eTime-sTime}ns: ")
-    result1.foreach(app  => println(s" ${app.startTime} ${app.room} ${app.advisor}"))
+    result1.foreach(avail  => println(s" $avail"))
 
     println("0. Shutdown")
     system.shutdown()
